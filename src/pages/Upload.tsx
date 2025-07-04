@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -25,7 +24,7 @@ const Upload = () => {
   const handleFileSelect = useCallback((selectedFile: File) => {
     console.log("File selected:", selectedFile.name);
     setFile(selectedFile);
-    setApiResults(null); // Clear previous results
+    setApiResults(null);
     toast({
       title: "File selected! 📄",
       description: `${selectedFile.name} is ready to be analyzed`,
@@ -42,7 +41,6 @@ const Upload = () => {
       return;
     }
 
-    // Validate file size (1MB limit)
     if (file.size > 1024 * 1024) {
       toast({
         title: "File too large! 📏",
@@ -54,10 +52,6 @@ const Upload = () => {
 
     setIsUploading(true);
     setUploadProgress(0);
-
-    // Create FormData for multipart/form-data
-    const formData = new FormData();
-    formData.append('resume', file);
 
     try {
       // Simulate progress
@@ -71,10 +65,18 @@ const Upload = () => {
         });
       }, 200);
 
+      // Extract text from file (simplified - in real app you'd use proper text extraction)
+      const resumeText = await file.text();
       console.log("Sending request to API...");
-      const response = await fetch('https://resume-scoring-api-macha.up.railway.app/analyze', {
-        method: 'POST',
-        body: formData,
+
+      const response = await fetch("https://resume-score-api-v2-production.up.railway.app/score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          resumeText: resumeText,
+        }),
       });
 
       clearInterval(progressInterval);
@@ -84,15 +86,22 @@ const Upload = () => {
         throw new Error(`API Error: ${response.status}`);
       }
 
-      const data: ApiResponse = await response.json();
-      console.log("API Response:", data);
+      const result = await response.json();
+      console.log("Score:", result.score);
+      
+      // Transform the response to match our existing interface
+      const data: ApiResponse = {
+        resume_score: result.score || 0,
+        ats_score: result.score || 0, // Using same score for both for now
+        tips: result.tips || ["Great job on your resume!"]
+      };
 
       setTimeout(() => {
         setIsUploading(false);
         setApiResults(data);
         toast({
           title: "Analysis Complete! 🎉",
-          description: "Your resume has been scored successfully",
+          description: `Resume Score: ${result.score}`,
         });
       }, 1000);
 
@@ -113,7 +122,6 @@ const Upload = () => {
     return <LoadingAnimation progress={uploadProgress} />;
   }
 
-  // Show results if we have them
   if (apiResults) {
     return <ResultsDisplay results={apiResults} onUploadAnother={() => {
       setApiResults(null);
