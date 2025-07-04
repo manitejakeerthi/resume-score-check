@@ -54,7 +54,6 @@ const Upload = () => {
     setUploadProgress(0);
 
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
@@ -65,18 +64,14 @@ const Upload = () => {
         });
       }, 200);
 
-      // Extract text from file (simplified - in real app you'd use proper text extraction)
-      const resumeText = await file.text();
-      console.log("Sending request to API...");
+      // ✅ Build FormData to send file
+      const formData = new FormData();
+      formData.append("resume", file); // must match backend field name
 
+      // ✅ Send request to your deployed Railway API
       const response = await fetch("https://resume-score-api-v2-production.up.railway.app/score", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          resumeText: resumeText,
-        }),
+        body: formData, // 🚫 Don't set headers manually
       });
 
       clearInterval(progressInterval);
@@ -88,11 +83,10 @@ const Upload = () => {
 
       const result = await response.json();
       console.log("Score:", result.score);
-      
-      // Transform the response to match our existing interface
+
       const data: ApiResponse = {
         resume_score: result.score || 0,
-        ats_score: result.score || 0, // Using same score for both for now
+        ats_score: result.score || 0,
         tips: result.tips || ["Great job on your resume!"]
       };
 
@@ -109,7 +103,7 @@ const Upload = () => {
       console.error("API Error:", error);
       setIsUploading(false);
       setUploadProgress(0);
-      
+
       toast({
         title: "Oops! Something went wrong 😅",
         description: "Our AI pigeons are taking a coffee break. Try again in a moment!",
