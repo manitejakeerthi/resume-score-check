@@ -64,30 +64,29 @@ const Upload = () => {
         });
       }, 200);
 
-      // ✅ Build FormData to send file
-      const formData = new FormData();
-      formData.append("resume", file); // must match backend field name
+      const resumeText = await file.text(); // Extract text
 
-      // ✅ Send request to your deployed Railway API
-      const response = await fetch("https://resume-score-api-v2-production.up.railway.app/score", {
+      const response = await fetch("https://resume-score-api-v2-production-08a0.up.railway.app/score", {
         method: "POST",
-        body: formData, // 🚫 Don't set headers manually
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          resumeText: resumeText,
+        }),
       });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
       const result = await response.json();
-      console.log("Score:", result.score);
 
       const data: ApiResponse = {
         resume_score: result.score || 0,
-        ats_score: result.score || 0,
-        tips: result.tips || ["Great job on your resume!"]
+        ats_score: result.score || 0, // You can customize this
+        tips: result.tips || ["Nice resume! Try to add more achievements."],
       };
 
       setTimeout(() => {
@@ -98,15 +97,13 @@ const Upload = () => {
           description: `Resume Score: ${result.score}`,
         });
       }, 1000);
-
     } catch (error) {
       console.error("API Error:", error);
       setIsUploading(false);
       setUploadProgress(0);
-
       toast({
-        title: "Oops! Something went wrong 😅",
-        description: "Our AI pigeons are taking a coffee break. Try again in a moment!",
+        title: "Something went wrong 😓",
+        description: "AI pigeons went offline. Try again later.",
         variant: "destructive",
       });
     }
