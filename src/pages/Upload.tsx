@@ -69,7 +69,7 @@ const Upload = () => {
 
       const resumeText = await file.text();
 
-      const response = await fetch("https://resume-score-api-v2-production-08a0.up.railway.app/score", {
+      const response = await fetch("https://resume-score-check-backend-648s.vercel.app", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
